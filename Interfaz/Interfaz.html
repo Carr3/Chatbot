@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chatbot UI (Mockup)</title>
+  <style>
+    :root{
+      --bg:#ffffff;
+      --card:#f8f8fb;
+      --ink:#16181d;
+      --muted:#6b7280;
+      --ring:#0ea5e9;
+      --accent:#111827;
+      --radius:18px;
+      --shadow:0 10px 25px rgba(0,0,0,.08);
+    }
+    html,body{height:100%}
+    body{
+      margin:0; font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: var(--bg); color: var(--ink);
+      display:flex; align-items:center; justify-content:center;
+    }
+    .app{
+      width:min(1100px, 96vw); height:min(680px, 92vh);
+      border:2px solid #e6e6ee; border-radius:28px; padding:22px; box-sizing:border-box;
+      position:relative; background:#fff;
+    }
+    .frame{ display:grid; grid-template-columns: 1.1fr 1fr; gap:28px; height:100%; }
+
+    /* Robot panel */
+    .robot{
+      display:flex; align-items:center; justify-content:center; position:relative;
+      border-radius:24px; background:linear-gradient(180deg,#fafafa, #f3f5f8);
+      border:1px solid #ececf3; box-shadow: var(--shadow);
+    }
+    .robot svg{ width:72%; max-width:520px; height:auto; }
+
+    /* History card */
+    .history{
+      background:var(--card); border:2px solid #1f2937; border-radius:22px;
+      padding:22px 22px 96px; position:relative; box-shadow:0 4px 0 #1f2937;
+      display:flex; flex-direction:column; overflow:hidden;
+    }
+    .history h2{
+      font-size:30px; margin:0 0 10px; font-weight:800; letter-spacing:.5px;
+    }
+    .log{ flex:1; overflow:auto; padding-right:6px; }
+    .msg{ margin:10px 0; line-height:1.45; }
+    .msg .role{ font-weight:700; }
+
+    /* Input dock */
+    .dock{
+      position:absolute; left:50%; transform:translateX(-50%);
+      bottom:20px; width:min(820px, 92%);
+      background:#fff; border:2px solid #1f2937; border-radius:18px;
+      display:flex; gap:10px; align-items:center; padding:12px 14px; box-shadow:0 4px 0 #1f2937;
+    }
+    .dock input{
+      flex:1; font-size:20px; border:none; outline:none; background:transparent;
+    }
+    .dock button{
+      border:none; background:#111827; color:#fff; padding:10px 16px; border-radius:14px; font-weight:700; cursor:pointer;
+    }
+    .dock button:active{ transform: translateY(1px); }
+
+    /* Thin scrollbars */
+    .log{ scrollbar-width:thin; }
+    .log::-webkit-scrollbar{ width:8px; }
+    .log::-webkit-scrollbar-thumb{ background:#d1d5db; border-radius:8px; }
+
+    /* Responsive */
+    @media (max-width: 900px){
+      .frame{ grid-template-columns: 1fr; }
+      .robot{ order:1; height:38%; }
+      .history{ order:2; height:62%; }
+      .dock{ width:94%; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="frame">
+      <!-- Robot (SVG inline para no depender de imágenes externas) -->
+      <div class="robot" aria-hidden="true">
+        <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ilustración de robot amistoso">
+          <defs>
+            <linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="#ffffff"/>
+              <stop offset="1" stop-color="#e9eef3"/>
+            </linearGradient>
+          </defs>
+          <g fill="none" stroke="#111827" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="120" y="44" width="272" height="328" rx="136" fill="url(#g)"/>
+            <rect x="156" y="140" width="200" height="140" rx="70" fill="#2d3b46"/>
+            <circle cx="208" cy="210" r="12" fill="#22d3ee"/>
+            <circle cx="304" cy="210" r="12" fill="#22d3ee"/>
+            <path d="M196 260q30 22 60 0" stroke-width="14"/>
+            <rect x="196" y="356" width="120" height="120" rx="36" fill="url(#g)"/>
+            <path d="M256 356v-44"/>
+            <path d="M120 120V68M392 120V68"/>
+            <circle cx="108" cy="60" r="16" fill="#1fb6ff"/>
+            <circle cx="404" cy="60" r="16" fill="#1fb6ff"/>
+            <path d="M420 310c28 10 40 22 40 36 0 10-10 18-24 18-18 0-32-14-40-26"/>
+            <path d="M92 338c-20 18-40 26-56 26-12 0-20-6-20-16 0-18 22-32 54-44"/>
+          </g>
+        </svg>
+      </div>
+
+      <!-- Historial -->
+      <section class="history" aria-labelledby="titulo-historial">
+        <h2 id="titulo-historial">Historial</h2>
+        <div id="log" class="log" aria-live="polite">  
+        </div>
+      </section>
+    </section>
+
+    <!-- Dock de entrada -->
+    <form id="dock" class="dock" autocomplete="off">
+      <input id="input" type="text" placeholder="Ingresa tu pregunta" aria-label="Ingresa tu pregunta" />
+      <button type="submit" title="Enviar">Enviar</button>
+    </form>
+  </main>
+
+  <script>
+    const form = document.getElementById('dock');
+    const input = document.getElementById('input');
+    const log = document.getElementById('log');
+
+    // Mock de envío: agrega el mensaje del usuario y una respuesta temporal del bot.
+    form.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const text = input.value.trim();
+      if(!text) return;
+      appendMsg('Usuario', text);
+
+      // Aquí conectarás tu backend/IA. Por ahora mostramos un placeholder.
+      const placeholder = 'Respuesta pendiente…';
+      appendMsg('Bot', placeholder);
+
+      input.value = '';
+      input.focus();
+    });
+
+    function appendMsg(role, text){
+      const div = document.createElement('div');
+      div.className = 'msg';
+      div.innerHTML = `<span class="role">${role}:</span> ${escapeHTML(text)}`;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    // Utilidad simple para evitar inyección al mostrar texto del usuario.
+    function escapeHTML(str){
+      return str
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'","&#039;");
+    }
+
+    // API mínima para que luego conectes la lógica de tu bot.
+    // Llama a window.updateBotResponse(id, nuevoTexto) si deseas actualizar
+    // el último placeholder con la respuesta real una vez llegue del servidor.
+  </script>
+</body>
+</html>
