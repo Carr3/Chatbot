@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Chatbot UI (Mockup)</title>
+  <title>Chatbot UI (ELIZA)</title>
   <style>
     :root{
       --bg:#ffffff;
@@ -81,9 +81,9 @@
 <body>
   <main class="app">
     <section class="frame">
-      <!-- Robot (SVG inline para no depender de imágenes externas) -->
+      <!-- Robot -->
       <div class="robot" aria-hidden="true">
-        <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ilustración de robot amistoso">
+        <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
               <stop offset="0" stop-color="#ffffff"/>
@@ -110,8 +110,7 @@
       <!-- Historial -->
       <section class="history" aria-labelledby="titulo-historial">
         <h2 id="titulo-historial">Historial</h2>
-        <div id="log" class="log" aria-live="polite">  
-        </div>
+        <div id="log" class="log" aria-live="polite"></div>
       </section>
     </section>
 
@@ -122,27 +121,40 @@
     </form>
   </main>
 
+  <!-- Scripts de ELIZA -->
+  <script src="elizadata.js"></script>
+  <script src="elizabot.js"></script>
+
   <script>
     const form = document.getElementById('dock');
     const input = document.getElementById('input');
     const log = document.getElementById('log');
 
-    // Mock de envío: agrega el mensaje del usuario y una respuesta temporal del bot.
-    form.addEventListener('submit', (e)=>{
+    // Inicializamos a ELIZA
+    const eliza = new ElizaBot();
+    appendMsg("Bot", eliza.getInitial());
+
+    form.addEventListener('submit', (e) => {
       e.preventDefault();
       const text = input.value.trim();
-      if(!text) return;
+      if (!text) return;
       appendMsg('Usuario', text);
 
-      // Aquí conectarás tu backend/IA. Por ahora mostramos un placeholder.
-      const placeholder = 'Respuesta pendiente…';
-      appendMsg('Bot', placeholder);
+      // Respuesta de ELIZA
+      const reply = eliza.transform(text);
+      appendMsg('Bot', reply);
+
+      // Si es una frase de salida
+      if (eliza.quit) {
+        form.querySelector("input").disabled = true;
+        form.querySelector("button").disabled = true;
+      }
 
       input.value = '';
       input.focus();
     });
 
-    function appendMsg(role, text){
+    function appendMsg(role, text) {
       const div = document.createElement('div');
       div.className = 'msg';
       div.innerHTML = `<span class="role">${role}:</span> ${escapeHTML(text)}`;
@@ -150,8 +162,7 @@
       log.scrollTop = log.scrollHeight;
     }
 
-    // Utilidad simple para evitar inyección al mostrar texto del usuario.
-    function escapeHTML(str){
+    function escapeHTML(str) {
       return str
         .replaceAll('&','&amp;')
         .replaceAll('<','&lt;')
@@ -159,10 +170,6 @@
         .replaceAll('"','&quot;')
         .replaceAll("'","&#039;");
     }
-
-    // API mínima para que luego conectes la lógica de tu bot.
-    // Llama a window.updateBotResponse(id, nuevoTexto) si deseas actualizar
-    // el último placeholder con la respuesta real una vez llegue del servidor.
   </script>
 </body>
 </html>
