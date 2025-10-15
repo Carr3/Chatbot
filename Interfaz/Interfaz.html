@@ -28,7 +28,6 @@
     }
     .frame{ display:grid; grid-template-columns: 1.1fr 1fr; gap:28px; height:100%; }
 
-    /* Robot panel */
     .robot{
       display:flex; align-items:center; justify-content:center; position:relative;
       border-radius:24px; background:linear-gradient(180deg,#fafafa, #f3f5f8);
@@ -36,7 +35,6 @@
     }
     .robot svg{ width:72%; max-width:520px; height:auto; }
 
-    /* History card */
     .history{
       background:var(--card); border:2px solid #1f2937; border-radius:22px;
       padding:22px 22px 96px; position:relative; box-shadow:0 4px 0 #1f2937;
@@ -49,7 +47,6 @@
     .msg{ margin:10px 0; line-height:1.45; }
     .msg .role{ font-weight:700; }
 
-    /* Input dock */
     .dock{
       position:absolute; left:50%; transform:translateX(-50%);
       bottom:20px; width:min(820px, 92%);
@@ -64,12 +61,32 @@
     }
     .dock button:active{ transform: translateY(1px); }
 
-    /* Thin scrollbars */
     .log{ scrollbar-width:thin; }
     .log::-webkit-scrollbar{ width:8px; }
     .log::-webkit-scrollbar-thumb{ background:#d1d5db; border-radius:8px; }
 
-    /* Responsive */
+    /* Modal general para juegos */
+    .modal {
+      display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+      background:rgba(0,0,0,0.5); align-items:center; justify-content:center;
+      z-index:1000;
+    }
+    .modal .content {
+      background:#fff; padding:10px; border-radius:12px;
+      width:90%; height:90%; box-shadow:0 6px 25px rgba(0,0,0,0.3);
+      position:relative;
+      display:flex; flex-direction:column;
+    }
+    .modal iframe {
+      flex:1; border:none; border-radius:8px;
+    }
+    .closeBtn {
+      position:absolute; top:10px; right:14px;
+      background:#111827; color:#fff; border:none;
+      padding:8px 12px; border-radius:8px; cursor:pointer;
+      font-weight:bold;
+    }
+
     @media (max-width: 900px){
       .frame{ grid-template-columns: 1fr; }
       .robot{ order:1; height:38%; }
@@ -81,7 +98,6 @@
 <body>
   <main class="app">
     <section class="frame">
-      <!-- Robot -->
       <div class="robot" aria-hidden="true">
         <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -107,21 +123,34 @@
         </svg>
       </div>
 
-      <!-- Historial -->
       <section class="history" aria-labelledby="titulo-historial">
         <h2 id="titulo-historial">Historial</h2>
         <div id="log" class="log" aria-live="polite"></div>
       </section>
     </section>
 
-    <!-- Dock de entrada -->
     <form id="dock" class="dock" autocomplete="off">
       <input id="input" type="text" placeholder="Ingresa tu pregunta" aria-label="Ingresa tu pregunta" />
       <button type="submit" title="Enviar">Enviar</button>
     </form>
   </main>
 
-  <!-- Scripts de ELIZA -->
+  <!-- Modal: Ajedrez -->
+  <div id="chessModal" class="modal">
+    <div class="content">
+      <button class="closeBtn" onclick="closeModal('chessModal')">Cerrar</button>
+      <iframe src="simple-chess-ai-master/index.html" title="Juego de Ajedrez"></iframe>
+    </div>
+  </div>
+
+  <!-- Modal: Tres en raya -->
+  <div id="tictactoeModal" class="modal">
+    <div class="content">
+      <button class="closeBtn" onclick="closeModal('tictactoeModal')">Cerrar</button>
+      <iframe src="tic-tac-toe-js-2020-master/index.html" title="Juego de Tres en Raya"></iframe>
+    </div>
+  </div>
+
   <script src="elizadata.js"></script>
   <script src="elizabot.js"></script>
 
@@ -129,8 +158,6 @@
     const form = document.getElementById('dock');
     const input = document.getElementById('input');
     const log = document.getElementById('log');
-
-    // Inicializamos a ELIZA
     const eliza = new ElizaBot();
     appendMsg("Bot", eliza.getInitial());
 
@@ -139,19 +166,52 @@
       const text = input.value.trim();
       if (!text) return;
       appendMsg('Usuario', text);
+      const lowerText = text.toLowerCase();
 
-      // Respuesta de ELIZA
+      // --- AJEDREZ ---
+      if (lowerText.includes('ajedrez') && (lowerText.includes('jugar') || lowerText.includes('abrir') || lowerText.includes('juguemos'))) {
+        appendMsg('Bot', '¡Perfecto! Abriendo el tablero de ajedrez...');
+        openModal('chessModal');
+        return clearInput();
+      }
+      if (lowerText.includes('cerrar ajedrez') || lowerText.includes('salir del ajedrez')) {
+        appendMsg('Bot', 'Cerrando el juego de ajedrez...');
+        closeModal('chessModal');
+        return clearInput();
+      }
+
+      // --- TRES EN RAYA ---
+      if (
+        lowerText.includes('tres en raya') ||
+        lowerText.includes('juego de tres rayas') ||
+        lowerText.includes('tic tac toe') ||
+        lowerText.includes('gato') ||
+        lowerText.includes('tres rayas')
+      ) {
+        appendMsg('Bot', '¡Genial! Abriendo el juego de tres en raya...');
+        openModal('tictactoeModal');
+        return clearInput();
+      }
+      if (
+        lowerText.includes('cerrar tres en raya') ||
+        lowerText.includes('salir del tres en raya') ||
+        lowerText.includes('cerrar gato')
+      ) {
+        appendMsg('Bot', 'Cerrando el juego de tres en raya...');
+        closeModal('tictactoeModal');
+        return clearInput();
+      }
+
+      // --- Respuesta normal de ELIZA ---
       const reply = eliza.transform(text);
       appendMsg('Bot', reply);
 
-      // Si es una frase de salida
       if (eliza.quit) {
-        form.querySelector("input").disabled = true;
+        input.disabled = true;
         form.querySelector("button").disabled = true;
       }
 
-      input.value = '';
-      input.focus();
+      clearInput();
     });
 
     function appendMsg(role, text) {
@@ -163,12 +223,24 @@
     }
 
     function escapeHTML(str) {
-      return str
-        .replaceAll('&','&amp;')
-        .replaceAll('<','&lt;')
-        .replaceAll('>','&gt;')
-        .replaceAll('"','&quot;')
-        .replaceAll("'","&#039;");
+      return str.replaceAll('&','&amp;')
+                .replaceAll('<','&lt;')
+                .replaceAll('>','&gt;')
+                .replaceAll('"','&quot;')
+                .replaceAll("'","&#039;");
+    }
+
+    function clearInput() {
+      input.value = '';
+      input.focus();
+    }
+
+    function openModal(id) {
+      document.getElementById(id).style.display = 'flex';
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none';
     }
   </script>
 </body>
